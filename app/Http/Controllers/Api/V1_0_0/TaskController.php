@@ -6,6 +6,7 @@ use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1_0_0\TaskRequest;
 use App\Http\Resources\V1_0_0\TaskResource;
+use App\Models\Tag;
 use App\Models\Task;
 use App\Repositories\Task\Contracts\TaskInterface;
 use Illuminate\Http\Request;
@@ -21,8 +22,6 @@ class TaskController extends Controller
     )
     {
         $this->middleware('auth:sanctum');
-
-        // $this->authorizeResource(Task::class, 'task');
     }
 
     /**
@@ -68,6 +67,7 @@ class TaskController extends Controller
 
         $data['order_number'] = $tasksCount + 1;
         $data['status'] = TaskStatus::TODO;
+        $data['tags'] = json_encode(array_key_exists('tags', $data) ? $data['tags'] : []);
 
         $task = $user->tasks()->create($data);
 
@@ -211,6 +211,67 @@ class TaskController extends Controller
             'archived_at' => null,
             'restored_at' => now(),
         ]);
+
+        return TaskResource::make($task);
+    }
+
+    /**
+     * Add Tag
+     *
+     * @param \App\Models\Task $task
+     * @param string $tagName
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function addTag(Task $task, $tagName)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to update this task');
+
+        $tag = Tag::where('name', $tagName)->firstOrFail();
+        abort_if(request()->user()->cannot('update', $tag), 401, 'You are not authorized to use this tag');
+
+        $tags = $task->tags === '' ? [] : json_decode($task->tags);
+
+        if (in_array($tagName, $tags)) {
+            abort(422, 'Tag already exist in the task');
+        }
+
+        array_push($tags, $tagName);
+        $task->tags = json_encode($tags);
+        $task->save();
+        $task->refresh();
+
+        return TaskResource::make($task);
+    }
+
+    /**
+     * Remove Tag
+     *
+     * @param \App\Models\Task $task
+     * @param string $tagName
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function removeTag(Task $task, $tagName)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to update this task');
+
+        $tag = Tag::where('name', $tagName)->firstOrFail();
+        abort_if(request()->user()->cannot('update', $tag), 401, 'You are not authorized to use this tag');
+
+        $tags = $task->tags === '' ? [] : json_decode($task->tags);
+
+
+        if (($key = array_search($tagName, $tags)) !== false) {
+            unset($tags[$key]);
+            $task->tags = json_encode(array_values($tags));
+            $task->save();
+        }
+        else {
+            abort(422, 'Tag doesn\'t exist in the task');
+        }
+
+        $task->refresh();
 
         return TaskResource::make($task);
     }

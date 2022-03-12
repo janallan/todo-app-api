@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\Tag\Contracts\TagInterface;
+use App\Repositories\Tag\TagRepository;
 use App\Repositories\Task\Contracts\TaskInterface;
 use App\Repositories\Task\TaskRepository;
 use App\Repositories\User\Contracts\UserInterface;
@@ -29,6 +31,7 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->userRepository();
         $this->tasksRepository();
+        $this->tagRepository();
     }
 
     /**
@@ -47,4 +50,11 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(TaskInterface::class, TaskRepository::class);
     }
 
+    /**
+     * Bind \App\Repositories\User\TagRepository contracts
+     */
+    private function tagRepository()
+    {
+        $this->app->bind(TagInterface::class, TagRepository::class);
+    }
 }

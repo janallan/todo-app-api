@@ -29,6 +29,7 @@ class TaskRequest extends FormRequest
             'description' => 'Description',
             'due_date' => 'Due Date',
             'prioritization' => 'Prioritization Level',
+            'tags' => 'Tags',
         ];
     }
 
@@ -44,6 +45,32 @@ class TaskRequest extends FormRequest
             'description' => ['required', 'string', 'max:500'],
             'due_date' => ['nullable', 'date', 'after_or_equal:today'],
             'prioritization' => ['required', 'in:' . implode(",", TaskPrioritization::getValues())],
+            'tags' => ['sometimes', 'array',
+                    function($attribute, $value, $fail) {
+                        if (!$this->checkTags()) {
+                            return $fail(__('validation.tag.invalid'));
+                        }
+                    }
+                ]
         ];
+    }
+
+    /**
+     * Check all tags if exist in user
+     *
+     * @return bool
+     * @creator Jan Allan Verano
+     */
+    private function checkTags(): bool
+    {
+        $user = request()->user();
+
+        foreach ($this->tags as $tag) {
+            if (!$user->tags->where('name', $tag)->first()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

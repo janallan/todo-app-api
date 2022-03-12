@@ -27,7 +27,10 @@ Route::group(['prefix' => 'task'], function (){
     Route::post('incomplete/{task}', 'TaskController@incomeplete');
     Route::post('archived/{task}', 'TaskController@archived');
     Route::post('restore/{task}', 'TaskController@restore');
+    Route::post('{task}/tags/add/{tagName}', 'TaskController@addTag');
+    Route::post('{task}/tags/remove/{tagName}', 'TaskController@removeTag');
 });
 
-Route::resource('task', 'TaskController');
+Route::resource('task', 'TaskController')->except(['create', 'edit']);
+Route::resource('tag', 'TagController')->except(['create', 'edit']);
 

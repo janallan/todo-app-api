@@ -20,6 +20,7 @@ class Task extends Model
         'user_id',
         'title',
         'description',
+        'tags',
         'due_date',
         'prioritization',
         'order_number',

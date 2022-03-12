@@ -26,6 +26,9 @@ class TaskResource extends JsonResource
             'archived_at' => $this->archived_at,
             'restored_at' => $this->restored_at,
             'deleted_at' => $this->deleted_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'tags' => json_decode($this->tags),
 
         ];
     }
