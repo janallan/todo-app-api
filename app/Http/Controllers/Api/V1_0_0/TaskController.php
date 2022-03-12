@@ -6,10 +6,12 @@ use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1_0_0\TaskRequest;
 use App\Http\Resources\V1_0_0\TaskResource;
+use App\Models\Media;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Repositories\Task\Contracts\TaskInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TaskController extends Controller
 {
@@ -270,6 +272,52 @@ class TaskController extends Controller
         else {
             abort(422, 'Tag doesn\'t exist in the task');
         }
+
+        $task->refresh();
+
+        return TaskResource::make($task);
+    }
+
+    /**
+     * Attach File to Task
+     *
+     * @param \App\Models\Task $task
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function uploadAttachments(Task $task, Request $request)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to attach files to this task');
+
+        $request->validate([
+            'attachments.*' => ['required', 'file', 'max:2000', 'mimes:svg,png,jpg,mp4,csv,txt,doc,docx'],
+        ]);
+
+        foreach ($request->file('attachments') as $file) {
+            $task->addMedia($file)->toMediaCollection('task-attachments');
+        }
+
+        $task->refresh();
+
+        return TaskResource::make($task->load('attachments'));
+    }
+
+    /**
+     * Delete Attachment from Task
+     *
+     * @param \App\Models\Task $task
+     * @param \App\Models\Media $media
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function deleteAttachment(Task $task, Media $media)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to remove attached files to this task');
+
+        abort_if(!$task->attachments?->where('id', $media->id)->first(), 401, 'Attachment not found in the task');
+
+        $task->deleteMedia($media->id);
 
         $task->refresh();
 

@@ -29,6 +29,8 @@ Route::group(['prefix' => 'task'], function (){
     Route::post('restore/{task}', 'TaskController@restore');
     Route::post('{task}/tags/add/{tagName}', 'TaskController@addTag');
     Route::post('{task}/tags/remove/{tagName}', 'TaskController@removeTag');
+    Route::post('{task}/attachments/upload', 'TaskController@uploadAttachments');
+    Route::post('{task}/attachments/delete/{media}', 'TaskController@deleteAttachment');
 });
 
 Route::resource('task', 'TaskController')->except(['create', 'edit']);

@@ -29,6 +29,8 @@ class TaskResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'tags' => json_decode($this->tags),
+            // 'attachments' => $this->attachments,
+            'attachments' => MediaResource::collection($this->getMedia('task-attachments')),
 
         ];
     }
