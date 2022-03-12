@@ -6,6 +6,8 @@ use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1_0_0\TaskRequest;
 use App\Http\Resources\V1_0_0\TaskResource;
+use App\Models\Task;
+use App\Repositories\Task\Contracts\TaskInterface;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -14,9 +16,13 @@ class TaskController extends Controller
     /**
      * Create new Controller instance
      */
-    public function __construct()
+    public function __construct(
+        private TaskInterface $taskInterface
+    )
     {
         $this->middleware('auth:sanctum');
+
+        // $this->authorizeResource(Task::class, 'task');
     }
 
     /**
@@ -27,7 +33,11 @@ class TaskController extends Controller
      */
     public function index()
     {
-        //getUserTasks
+        $user = request()->user();
+
+        $tasks = $this->taskInterface->getUserTasks($user->id);
+
+        return TaskResource::collection($tasks);
     }
 
     /**
@@ -57,6 +67,7 @@ class TaskController extends Controller
         $tasksCount = $user->tasks->count();
 
         $data['order_number'] = $tasksCount + 1;
+        $data['status'] = TaskStatus::TODO;
 
         $task = $user->tasks()->create($data);
 
@@ -68,15 +79,13 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int $taskId
+     * @param  Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function show(int $taskId)
+    public function show(Task $task)
     {
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
-
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to view this task');
         return TaskResource::make($task);
     }
 
@@ -96,17 +105,15 @@ class TaskController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \App\Http\Requests\V1_0_0\TaskRequest  $request
-     * @param  int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function update(TaskRequest $request, int $taskId)
+    public function update(TaskRequest $request, Task $task)
     {
-        $user = $request->user();
+        abort_if($request->user()->cannot('update', $task), 401, 'You are not authorized to update this task');
 
         $data = $request->validated();
-
-        $task = $user->tasks->where('id', $taskId)->first();
 
         $task->update($data);
 
@@ -118,31 +125,29 @@ class TaskController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function destroy(int $taskId)
+    public function destroy(Task $task)
     {
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
-        $task->softDeletes();
+        abort_if(request()->user()->cannot('delete', $task), 401, 'You are not authorized to delete this task');
+        $task->delete();
 
-        return TaskResource::make($task);
+        return response('',204);
     }
 
     /**
      * Mark the task as completed
      *
-     * @param int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function completed(int $taskId)
+    public function completed(Task $task)
     {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to incomplete this task');
 
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
         $task->update([
             'status' => TaskStatus::COMPLETED,
             'completed_at' => now(),
@@ -152,17 +157,16 @@ class TaskController extends Controller
     }
 
     /**
-     * Mark the task as todo
+     * Mark the task as incomeplete
      *
-     * @param int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function todo(int $taskId)
+    public function incomeplete(Task $task)
     {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to update this task');
 
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
         $task->update([
             'status' => TaskStatus::TODO,
             'completed_at' => null,
@@ -174,15 +178,14 @@ class TaskController extends Controller
     /**
      * Archive task
      *
-     * @param int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function archived(int $taskId)
+    public function archived(Task $task)
     {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to archive this task');
 
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
         $task->update([
             'status' => TaskStatus::ARCHIVED,
             'archived_at' => now(),
@@ -195,15 +198,14 @@ class TaskController extends Controller
     /**
      * Restore the arhived task
      *
-     * @param int $taskId
+     * @param  \App\Models\Task $task
      * @return \Illuminate\Http\Response
      * @creator Jan Allan Verano
      */
-    public function restore(int $taskId)
+    public function restore(Task $task)
     {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to restore this task');
 
-        $user = request()->user();
-        $task = $user->tasks->where('id', $taskId)->first();
         $task->update([
             'status' => $task->completd_at ? TaskStatus::COMPLETED : TaskStatus::TODO,
             'archived_at' => null,

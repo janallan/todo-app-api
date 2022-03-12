@@ -15,6 +15,14 @@ use Spatie\QueryBuilder\QueryBuilder;
 class TaskRepository extends BaseRepository implements TaskInterface
 {
     /**
+     * Create new BaseRepository instance
+     */
+    public function __construct()
+    {
+        parent::__construct(new Task());
+    }
+
+    /**
      * Get User's Tasks
      *
      * @param int|string $userId

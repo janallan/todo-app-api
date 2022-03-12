@@ -62,6 +62,10 @@ class ApiResponseMiddleware
                 }
             }
         }
+        else if ($response->status() === 404 && str_contains($data->message, 'App\\Models')) {
+            preg_match_all("/\\[(.*?)\\]/", $data->message, $match);
+            $data->message = "No " . str_replace('App\\Models\\', '', $match[1][0]) . " record found";
+        }
 
         $response->setData($data);
 

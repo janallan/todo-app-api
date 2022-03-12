@@ -23,10 +23,10 @@ Route::post('register', 'RegisterController');
 
 
 Route::group(['prefix' => 'task'], function (){
-    Route::post('completed/{taskId}', 'TaskController@completed');
-    Route::post('todo/{taskId}', 'TaskController@todo');
-    Route::post('archived/{taskId}', 'TaskController@archived');
-    Route::post('restore/{taskId}', 'TaskController@restore');
+    Route::post('completed/{task}', 'TaskController@completed');
+    Route::post('incomplete/{task}', 'TaskController@incomeplete');
+    Route::post('archived/{task}', 'TaskController@archived');
+    Route::post('restore/{task}', 'TaskController@restore');
 });
 
 Route::resource('task', 'TaskController');

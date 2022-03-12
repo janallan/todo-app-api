@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\Task\Contracts\TaskInterface;
+use App\Repositories\Task\TaskRepository;
 use App\Repositories\User\Contracts\UserInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +28,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->userRepository();
+        $this->tasksRepository();
     }
 
     /**
@@ -35,4 +38,13 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->app->bind(UserInterface::class, UserRepository::class);
     }
+
+    /**
+     * Bind \App\Repositories\User\TaskRepository contracts
+     */
+    private function tasksRepository()
+    {
+        $this->app->bind(TaskInterface::class, TaskRepository::class);
+    }
+
 }
