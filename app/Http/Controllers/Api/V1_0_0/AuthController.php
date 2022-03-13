@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1_0_0;
 use App\Actions\V1_0_0\Auth\Login;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1_0_0\LoginResponseResource;
+use App\Http\Resources\V1_0_0\UserResource;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -50,6 +51,18 @@ class AuthController extends Controller
         $user = request()->user()->tokens()->delete();
 
         return response()->json([], 204);
+    }
+
+    /**
+     * User Profile
+     *
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function profile()
+    {
+        $user = request()->user();
+        return UserResource::make($user);
     }
 
 }
