@@ -19,6 +19,7 @@ class TaskResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'due_date' => $this->due_date,
+            'days_before_due' => now()->startOfDay()->diffInDays($this->due_date),
             'prioritization' => $this->prioritization,
             'order_number' => $this->order_number,
             'status' => $this->status,

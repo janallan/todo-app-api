@@ -37,13 +37,39 @@ class TaskRepository extends BaseRepository implements TaskInterface
                 AllowedFilter::callback('search', function (Builder $query, $value) {
                     $query->whereRaw("CONCAT(tasks.title, ' ', tasks.description) LIKE '%{$value}%'");
                 }),
-                AllowedFilter::callback('created', function (Builder $query, $value) {
+                AllowedFilter::callback('prioritization', function (Builder $query, $value) {
+                    $query->whereRaw("prioritization = '{$value}'");
+                }),
+                AllowedFilter::callback('completed', function (Builder $query, $value) {
                     if (isset($value['from'])  && isset($value['to'])) {
-                        $query->whereRaw("DATE(tasks.created_at) BETWEEN '{$value['from']}' AND '{$value['to']}'");
+                        $query->whereRaw("DATE(tasks.completed_at) BETWEEN '{$value['from']}' AND '{$value['to']}'");
                     }
-                })
+                }),
+                AllowedFilter::callback('due', function (Builder $query, $value) {
+                    if (isset($value['from'])  && isset($value['to'])) {
+                        $query->whereRaw("DATE(tasks.due_date) BETWEEN '{$value['from']}' AND '{$value['to']}'");
+                    }
+                }),
+                AllowedFilter::callback('archived', function (Builder $query, $value) {
+                    if (isset($value['from'])  && isset($value['to'])) {
+                        $query->whereRaw("DATE(tasks.archived_at) BETWEEN '{$value['from']}' AND '{$value['to']}'");
+                    }
+                }),
+                AllowedFilter::callback('show_archived', function (Builder $query, $value) {
+                    if (!$value) {
+                        $query->whereNull("tasks.archived_at");
+                    }
+                }),
+                AllowedFilter::callback('show_completed', function (Builder $query, $value) {
+                    if (!$value) {
+                        $query->whereNull("tasks.completed_at");
+                    }
+                }),
+
             ])
+            ->defaultSort('-created_at')
+            ->allowedSorts('created_at', 'completed_at', 'due_date', 'name', 'prioritization', 'description')
             ->select('tasks.*')
-            ->paginate(15);
+            ->paginate(9);
     }
 }

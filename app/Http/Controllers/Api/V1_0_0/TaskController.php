@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1_0_0;
 use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1_0_0\TaskRequest;
+use App\Http\Resources\V1_0_0\TagResource;
 use App\Http\Resources\V1_0_0\TaskResource;
 use App\Models\Media;
 use App\Models\Tag;
@@ -12,6 +13,7 @@ use App\Models\Task;
 use App\Repositories\Task\Contracts\TaskInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class TaskController extends Controller
 {
@@ -218,6 +220,63 @@ class TaskController extends Controller
     }
 
     /**
+     * Get Available Tags for the Task
+     *
+     * @param \App\Models\Task
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function availableTags(Task $task)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to remove attached files to this task');
+
+        $user = request()->user();
+
+        $available = $user->tags;
+
+        return TagResource::collection($available);
+
+    }
+
+    /**
+     * Set Tags
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function setTags(Task $task, Request $request)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to update this task');
+
+        $data = $request->validate([
+            'tags' => ['nullable', 'array']
+        ]);
+
+        $user = $request->user();
+
+        foreach ($data['tags'] as $key => $tag) {
+            $tag = strtoupper($tag);
+
+            $exist = $user->tags->where('name', $tag)->first();
+            if (!$exist) {
+                $user->tags()->create(['name' => $tag]);
+            }
+
+            $data['tags'][$key] = $tag;
+        }
+
+        $data['tags'] = array_unique($data['tags']);
+
+        $task->update($data);
+        $task->refresh();
+
+        return TaskResource::make($task);
+
+
+    }
+
+    /**
      * Add Tag
      *
      * @param \App\Models\Task $task
@@ -289,6 +348,7 @@ class TaskController extends Controller
     public function uploadAttachments(Task $task, Request $request)
     {
         abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to attach files to this task');
+        Log::info($request->all());
 
         $request->validate([
             'attachments.*' => ['required', 'file', 'max:2000', 'mimes:svg,png,jpg,mp4,csv,txt,doc,docx'],
@@ -322,6 +382,26 @@ class TaskController extends Controller
         $task->refresh();
 
         return TaskResource::make($task);
+    }
+
+    /**
+     * Download Attachment from Task
+     *
+     * @param \App\Models\Task $task
+     * @param \App\Models\Media $media
+     * @return \Illuminate\Http\Response
+     * @creator Jan Allan Verano
+     */
+    public function downloadAttachment(Task $task, Media $media)
+    {
+        abort_if(request()->user()->cannot('update', $task), 401, 'You are not authorized to remove attached files to this task');
+
+        abort_if(!$task->attachments?->where('id', $media->id)->first(), 401, 'Attachment not found in the task');
+
+
+        return URL::temporarySignedRoute(
+            'download.task-attachment', now()->addMinutes(5), ['media' => $media->id]
+        );
     }
 
 }

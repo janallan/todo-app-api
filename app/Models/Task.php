@@ -41,7 +41,6 @@ class Task extends Model implements HasMedia
      * @var array<string, string>
      */
     protected $casts = [
-        'due_date' => 'date',
         'completed_at' => 'datetime',
         'archived_at' => 'datetime',
         'restored_at' => 'datetime',
